@@ -1,6 +1,7 @@
 using System;
 
-/* Later changes: use a hash table
+/* Changes to be made: Display alphabetically?
+ * Check inputs are valid or else theyll make it crash :/
  * ask for a file name, if file given, read file into the data structure
  * Make a makefile
  */
@@ -8,22 +9,22 @@ namespace Phonebook
 {
 	class Contact	
 	{
-		private string fname, lname;
-		private long num;
+		private string fname, lname; //first, last names
+		private long num;            //phone number
 
-		public Contact()
+		public Contact()  
 		{ 
 			fname = ""; 
 			lname = ""; 
 			num = -1;
-		}
+		} //default constructor
 
 		public Contact(string f, string l, long n) 
 		{
 			fname = f;
 			lname = l;
 			num = n;
-		}
+		} //constructor for when we have the info separately and are ready
 
 		public string getFname() { return fname; }
 		public string getLname() { return lname; }
@@ -33,15 +34,15 @@ namespace Phonebook
 			fname = rhs.fname;
 			lname = rhs.lname;
 			num = rhs.num;
-		}
+		} //using this function to basically do contact a = contact b
 	} //end class Contact
 
 	class Book
 	{
 		private Contact[] ar; //making this a hash table
-		int size;
-		int nelem;
-
+		private int size;     //total (m)
+		private int nelem;    //current # of elements (n)
+							  //resizing when n/m == 1/2, half full
 		public Book()
 		{
 			size = 3;
@@ -50,13 +51,13 @@ namespace Phonebook
 			//even tho same name as ln 49, it's a DIFFERENT VARIABE
 			for(int i = 0; i < size; i++)
 				ar[i] = new Contact();
-		}
+		} //constructor()
 
 		public void formatnum(out long num)
 		{
 			string number = Console.ReadLine();
 			num = Convert.ToInt64(number);
-		}
+		} //formatnum() just converts the user input string into a long
 
 		public int scorestring(string last)
 		{
@@ -67,7 +68,7 @@ namespace Phonebook
 			for(int i = 0; i < len; i++)
 				sum += ch[i];
 			return sum;
-		}
+		} //scorestring() how we use last name string as the key
 
 		public int hashfunc(string last, Contact[] ar) //returns an available place
 		{
@@ -79,18 +80,15 @@ namespace Phonebook
 			for(int i = 1; ar[ind].getNumber() != -1; i++)
 				ind = (score + i*i) % size;
 			return ind;	
-		}
+		} //hashfunc() applies the hash function and quadratic probing
 
 		public void resize()
 		{
-			//double size
-			//create a new array...how to overwrite Book's array??
-			//go through ar[i].getName() != nulls and rehash them with new size
 			size *= 2;
 			Contact[] temp = new Contact[size];
 			for(int i = 0; i < size; i++)
 				temp[i] = new Contact();
-			Console.WriteLine("eh?");
+			
 			//rehash from old ar to temp
 			for(int i = 0; i < size/2; i++)
 				if(ar[i].getNumber() != -1) //rehash for filled slots
@@ -98,56 +96,54 @@ namespace Phonebook
 					int index = hashfunc(ar[i].getLname(), temp);
 					temp[index].copyContact(ar[i]);
 				}
-			Console.WriteLine("Still okay");
+			
 			ar = new Contact[size];					//think this worked
 			//just need to create new array first then copy
 			for(int i = 0; i < size; i++)
 			{
 				ar[i] = new Contact();
 				ar[i].copyContact(temp[i]);
-				Console.WriteLine("SStill okay");
 			}
-			Console.WriteLine("I lived thru reisze");
-		} //resize()
+		} //resize() resizes Book's ar to 2x and rehashes everything
+
+		public void prompt2(out string f, out string l)
+		{
+			Console.WriteLine("Enter the first name:");
+			f = Console.ReadLine();
+			Console.WriteLine("Enter the last name: ");
+			l = Console.ReadLine();
+		} //prompt for the first and last name used in 2 functions
 
 		public void addContact()
 		{
 			long num;
 			string first, last;
-			Console.WriteLine("Enter the first name:");
-			first = Console.ReadLine();
-			Console.WriteLine("Enter the last name: ");
-			last = Console.ReadLine();
+			prompt2(out first, out last);
 			Console.WriteLine("Enter the phone number: ");
-			formatnum(out num); // you need out not ref because
-			//num has no value yet. ur giving it a 
-			//value inside formatnum()
+			formatnum(out num); 
 
 			Contact contact = new Contact(first, last, num);
 
 			if(nelem >= (size / 2))
-			{
-				resize();
-				Console.WriteLine("I resized and size is now {0}", size);
-			}
-			nelem++;
+				resize(); //double the size of ar, and rehash elements
 
-			int j = hashfunc(last, ar);
-			ar[j].copyContact(contact);
+			int j = hashfunc(last, ar); //find a slot in the table 
+			ar[j].copyContact(contact); 
+			nelem++;	  // update the # of elements
 		}
 
 		public void deleteContact()
 		{
 			int i;
-			i = search();
+			i = search();  //call search function to see if exists
 			if(i == -1)
 			{
 				Console.WriteLine("Contact not found.");
 				return;
 			}
 
-			Contact c = new Contact();
-			ar[i].copyContact(c);
+			Contact c = new Contact(); //create contact w default values
+			ar[i].copyContact(c);      //copying over deletes old values
 		} // deleteContact()
 
 		public void displayAll(int sz)
@@ -156,7 +152,7 @@ namespace Phonebook
 			{
 				if(ar[i].getFname() != "")
 				{
-					Console.WriteLine("{0}, {1}, {2}", 
+					Console.WriteLine("{0} {1}, {2}", 
 				 		ar[i].getFname(), ar[i].getLname(), 
 				 		ar[i].getNumber());
 				}
@@ -167,16 +163,8 @@ namespace Phonebook
 		{	
 			int score;
 			string first, last;
-			Console.WriteLine("Enter first name:");
-			first = Console.ReadLine();
-			Console.WriteLine("Enter last name:");
-			last = Console.ReadLine();
-			//what we can do is...increment i for the i^2 until
-			//either found item or ar[i] is null. cuz if ar[i] is 
-			//null, then we havent found the contact and we reached
-			//the end of the search pretty much. Because of
-			//rehashings from addcontact(), table will always have
-			//empty spaces
+			prompt2(out first, out last); //ask user for first and last names
+
 			score = scorestring(last);
 			int ind = score % size;
 			if(String.Compare(ar[ind].getFname(), first) == 0)
@@ -185,20 +173,15 @@ namespace Phonebook
 					return ind;
 			}
 
-			else
-			{
-				for(int i = 1; ar[ind].getNumber() != -1; i++) //no empty space
-				{
-					if(String.Compare(ar[ind].getFname(), first) == 0)
-						if(String.Compare(ar[ind].getLname(), last) == 0) 
-							return ind;
-					ind = (score + i*i) % size;
-				} //for each quadratic probe that's not empty
+			for(int i = 1; ar[ind].getNumber() != -1; i++) 
+			{			   //while no empty spaces
+				if(String.Compare(ar[ind].getFname(), first) == 0)
+					if(String.Compare(ar[ind].getLname(), last) == 0) 
+						return ind;
+				ind = (score + i*i) % size;	//calculate the next index to check
+			} //for each quadratic probe that's not empty
 
-				return -1;	//if still here, didnt find it
-			} // else
-
-			return -1;
+			return -1;	//if still here, didnt find it
 		} // search()
 
 		public int prompt()
